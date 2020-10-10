@@ -1,0 +1,11 @@
+memory_initialization_radix = 16;
+memory_initialization_vector =
+66666666
+77777777
+88888888
+99999999
+aaaaaaaa
+bbbbbbbb
+cccccccc
+dddddddd
+eeeeeeee
