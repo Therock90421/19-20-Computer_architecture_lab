@@ -1,0 +1,393 @@
+module mycpu_top(
+    input  [5:0]  int,
+    input         aclk,
+    input         aresetn,
+    //AXI interface
+    //ar
+    output [ 3:0] arid,
+    output [31:0] araddr,
+    output [ 7:0] arlen,
+    output [ 2:0] arsize,
+    output [ 1:0] arburst,
+    output [ 1:0] arlock,
+    output [ 3:0] arcache,
+    output [ 2:0] arprot,
+    output        arvalid,
+    input         arready,
+    //r
+    input  [ 3:0] rid,
+    input  [31:0] rdata,
+    input  [ 1:0] rresp,
+    input         rlast,
+    input         rvalid,
+    output        rready,
+    //aw
+    output [ 3:0] awid,
+    output [31:0] awaddr,
+    output [ 7:0] awlen,
+    output [ 2:0] awsize,
+    output [ 1:0] awburst,
+    output [ 1:0] awlock,
+    output [ 3:0] awcache,
+    output [ 2:0] awprot,
+    output        awvalid,
+    input         awready,
+    //w
+    output [ 3:0] wid,
+    output [31:0] wdata,
+    output [ 3:0] wstrb,
+    output        wlast,
+    output        wvalid,
+    input         wready,
+    //b
+    input  [ 3:0] bid,
+    input  [ 1:0] bresp,
+    input         bvalid,
+    output        bready,
+
+    // trace debug interface
+    output [31:0] debug_wb_pc,
+    output [ 3:0] debug_wb_rf_wen,
+    output [ 4:0] debug_wb_rf_wnum,
+    output [31:0] debug_wb_rf_wdata
+);
+wire rd_req;
+wire[ 2:0]  rd_type;//3'b000-BYTE  3'b001-HALFWORD 3'b010-WORD 3'b100-cache-row
+wire[31:0]  rd_addr;
+wire rd_rdy;//read_req can be accepted
+wire  ret_valid;
+wire  ret_last;
+wire [31:0]ret_data;
+
+wire clk;
+assign clk=aclk;
+wire resetn;
+assign resetn=aresetn;
+wire        reset;
+assign reset=~resetn;
+wire last_load;
+// inst sram interface
+wire        inst_sram_en;
+wire [ 3:0] inst_sram_wen;
+wire [31:0] inst_sram_addr;
+wire [31:0] inst_sram_wdata;
+wire [31:0] inst_sram_rdata;
+// data sram interface
+wire        data_sram_en;
+wire [ 3:0] data_sram_wen;
+wire [31:0] data_sram_addr;
+wire [31:0] data_sram_wdata;
+wire [31:0] data_sram_rdata;
+
+wire inst_req;
+wire inst_wr;
+assign inst_wr=1'b0;
+wire [1:0] inst_size;
+assign inst_size=2'b10;
+wire inst_addr_ok;
+wire inst_data_ok;
+
+wire data_req;
+wire data_wr;
+wire [2:0] data_size;
+wire data_addr_ok;
+wire data_data_ok;
+
+wire ws_to_es_tlbp;
+wire ms_to_es_tlbp;
+
+cpu_axi_interface cpu_axi_interface(
+    .clk          (clk        ),
+    .resetn       (resetn     ),
+        
+    .inst_req     (rd_req  ),
+    .inst_wr      (inst_wr     ),
+    .inst_size    (inst_size   ),
+    .inst_addr    (rd_addr  ),
+    .inst_wdata   (0 ),
+    .inst_rdata   (ret_data ),
+    .inst_addr_ok (rd_rdy),
+    //.inst_data_ok (ret_valid),
+    .ret_valid(ret_valid),
+    .ret_last(ret_last),
+
+    .data_req     (data_req    ),
+    .data_wr      (data_wr     ),
+    .data_size    (data_size   ),
+    .data_addr    (data_sram_addr   ),
+    .data_wdata   (data_sram_wdata  ),
+    .data_rdata   (data_sram_rdata  ),
+    .data_addr_ok (data_addr_ok),
+    .data_data_ok (data_data_ok),
+
+    .arid         (arid        ),
+    .araddr       (araddr      ),
+    .arlen        (arlen       ),
+    .arsize       (arsize      ),
+    .arburst      (arburst     ),
+    .arlock       (arlock      ),
+    .arcache      (arcache     ),
+    .arprot       (arprot      ),
+    .arvalid      (arvalid     ),
+    .arready      (arready     ),
+        
+    .rid          (rid         ),
+    .rdata        (rdata       ),
+    .rresp        (rresp       ),
+    .rlast        (rlast       ),
+    .rvalid       (rvalid      ),
+    .rready       (rready      ),
+        
+    .awid         (awid        ),
+    .awaddr       (awaddr      ),
+    .awlen        (awlen       ),
+    .awsize       (awsize      ),
+    .awburst      (awburst     ),
+    .awlock       (awlock      ),
+    .awcache      (awcache     ),
+    .awprot       (awprot      ),
+    .awvalid      (awvalid     ),
+    .awready      (awready     ),
+        
+    .wid          (wid         ),
+    .wdata        (wdata       ),
+    .wstrb        (wstrb       ),
+    .wlast        (wlast       ),
+    .wvalid       (wvalid      ),
+    .wready       (wready      ),
+        
+    .bid          (bid         ),
+    .bresp        (bresp       ),
+    .bvalid       (bvalid      ),
+    .bready       (bready      )
+    
+    );
+
+
+
+wire         ds_allowin;
+wire         es_allowin;
+wire         ms_allowin;
+wire         ws_allowin;
+wire         fs_to_ds_valid;
+wire         ds_to_es_valid;
+wire         es_to_ms_valid;
+wire         ms_to_ws_valid;
+wire [`FS_TO_DS_BUS_WD -1:0] fs_to_ds_bus;
+wire [`DS_TO_ES_BUS_WD -1:0] ds_to_es_bus;
+wire [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus;
+wire [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus;
+wire [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus;
+wire [`BR_BUS_WD       -1:0] br_bus;
+wire [                   36:0 ] ws_to_fs_bus;
+wire [                    1:0 ] ws_to_ds_bus;
+wire                            ws_to_es_bus;
+wire                            ws_to_ms_bus;
+wire                            ms_to_es_bus;
+wire [3:0]                    div_or_mul;
+/*wire [5   :0]                es_dest_withvalid;
+    //es_dest_withvalid  第5位表示有没有必要阻断，后五位表示寄存器号
+wire [5   :0]                ms_dest_withvalid;
+    
+wire [5   :0]                ws_dest_withvalid;*/
+wire [38   :0]                es_dest_withvalid;
+    //es_dest_withvalid  第5位表示有没有必要阻断，后五位表示寄存器号
+wire [38   :0]                ms_dest_withvalid;
+    
+wire [37   :0]                ws_dest_withvalid;
+
+    // search port 0
+     wire  [              18:0] s0_vpn2;
+     wire                       s0_odd_page;     
+     wire  [               7:0] s0_asid;     
+     wire                      s0_found;     
+     wire [               3:0] s0_index;     
+     wire [              19:0] s0_pfn;     
+     wire [               2:0] s0_c;     
+     wire                      s0_d;     
+     wire                      s0_v; 
+ 
+    // search port 1     
+     wire  [              18:0] s1_vpn2;     
+     wire                       s1_odd_page;     
+     wire  [               7:0] s1_asid;     
+     wire                      s1_found;     
+     wire [               3:0] s1_index;     
+     wire [              19:0] s1_pfn;     
+     wire [               2:0] s1_c;     
+     wire                      s1_d;     
+     wire                      s1_v; 
+     
+     
+     wire [31:0]  c0_entryhi;
+     
+
+// IF stage
+if_stage if_stage(
+    .clk            (clk            ),
+    .reset          (reset          ),
+    //allowin
+    .ds_allowin     (ds_allowin     ),
+    //brbus
+    .br_bus         (br_bus         ),
+    //outputs
+    .fs_to_ds_valid (fs_to_ds_valid ),
+    .fs_to_ds_bus   (fs_to_ds_bus   ),
+    // inst sram interface
+    .ws_to_fs_bus   (ws_to_fs_bus   ),
+    ////////////////////////////////
+    .s0_vpn2        (s0_vpn2),
+    .s0_odd_page    (s0_odd_page),
+               // input  [               7:0] s0_asid,     
+    .s0_found       (s0_found),
+    .s0_index       (s0_index),
+    .s0_pfn         (s0_pfn),
+    .s0_c           (s0_c),
+    .s0_d           (s0_d),
+    .s0_v           (s0_v),
+    
+    .rd_req(rd_req),
+    .rd_type(rd_type),//3'b000-BYTE  3'b001-HALFWORD 3'b010-WORD 3'b100-cache-row
+    .rd_addr(rd_addr),
+    .rd_rdy(rd_rdy),//read_req can be accepted
+    .ret_valid(ret_valid),
+    .ret_last(ret_last),
+    .ret_data(ret_data)
+);
+
+// ID stage
+id_stage id_stage(
+    .clk            (clk            ),
+    .reset          (reset          ),
+    //allowin
+    .es_allowin     (es_allowin     ),
+    .ds_allowin     (ds_allowin     ),
+    //from fs
+    .fs_to_ds_valid (fs_to_ds_valid ),
+    .fs_to_ds_bus   (fs_to_ds_bus   ),
+    //to es
+    .ds_to_es_valid (ds_to_es_valid ),
+    .ds_to_es_bus   (ds_to_es_bus   ),
+    //to fs
+    .br_bus         (br_bus         ),
+    //to rf: for write back
+    .ws_to_rf_bus   (ws_to_rf_bus   ),
+    .es_dest_withvalid  (es_dest_withvalid),
+    .ms_dest_withvalid  (ms_dest_withvalid),
+    .ws_dest_withvalid  (ws_dest_withvalid),
+    .ws_to_ds_bus   (ws_to_ds_bus   )
+    
+);
+// EXE stage
+exe_stage exe_stage(
+    .clk            (clk            ),
+    .reset          (reset          ),
+    //allowin
+    .ms_allowin     (ms_allowin     ),
+    .es_allowin     (es_allowin     ),
+    //from ds
+    .ds_to_es_valid (ds_to_es_valid ),
+    .ds_to_es_bus   (ds_to_es_bus   ),
+    //to ms
+    .es_to_ms_valid (es_to_ms_valid ),
+    .es_to_ms_bus   (es_to_ms_bus   ),
+    // data sram interface
+    .data_sram_en   (data_sram_en   ),
+    .data_sram_wen  (data_sram_wen  ),
+    .data_sram_addr (data_sram_addr ),
+    .data_sram_wdata(data_sram_wdata),
+    
+    .es_dest_withvalid  (es_dest_withvalid),
+    .ws_to_es_bus   (ws_to_es_bus   ),
+    .ms_to_es_bus   (ms_to_es_bus),
+
+    .data_req(data_req),
+    .data_wr(data_wr),
+    .data_size(data_size),
+    .data_addr_ok(data_addr_ok),
+    .data_data_ok   (data_data_ok),
+    
+        .s1_vpn2        (s1_vpn2),
+        .s1_odd_page    (s1_odd_page),
+                   // input  [               7:0] s0_asid,     
+        .s1_found       (s1_found),
+        .s1_index       (s1_index),
+        .s1_pfn         (s1_pfn),
+        .s1_c           (s1_c),
+        .s1_d           (s1_d),
+        .s1_v           (s1_v),
+        .c0_entryhi     (c0_entryhi),
+        .ws_to_es_tlbp  (ws_to_es_tlbp),
+        .ms_to_es_tlbp  (ms_to_es_tlbp)
+);
+
+// MEM stage
+mem_stage mem_stage(
+    .clk            (clk            ),
+    .reset          (reset          ),
+    //allowin
+    .ws_allowin     (ws_allowin     ),
+    .ms_allowin     (ms_allowin     ),
+    //from es
+    .es_to_ms_valid (es_to_ms_valid ),
+    .es_to_ms_bus   (es_to_ms_bus   ),
+    //to ws
+    .ms_to_ws_valid (ms_to_ws_valid ),
+    .ms_to_ws_bus   (ms_to_ws_bus   ),
+    //from data-sram
+    .data_sram_rdata(data_sram_rdata),
+    
+    .ms_dest_withvalid  (ms_dest_withvalid),
+    .ws_to_ms_bus   (ws_to_ms_bus   ),
+    .ms_to_es_bus   (ms_to_es_bus),
+
+    .data_data_ok(data_data_ok),
+    .ms_to_es_tlbp  (ms_to_es_tlbp)
+);
+// WB stage
+wb_stage wb_stage(
+    .clk            (clk            ),
+    .reset          (reset          ),
+    //allowin
+    .ws_allowin     (ws_allowin     ),
+    //from ms
+    .ms_to_ws_valid (ms_to_ws_valid ),
+    .ms_to_ws_bus   (ms_to_ws_bus   ),
+    //to rf: for write back
+    .ws_to_rf_bus   (ws_to_rf_bus   ),
+    .ws_to_fs_bus   (ws_to_fs_bus   ),
+    .ws_to_ds_bus   (ws_to_ds_bus   ),
+    .ws_to_es_bus   (ws_to_es_bus   ),
+    .ws_to_ms_bus   (ws_to_ms_bus   ),
+    //trace debug interface
+    .debug_wb_pc      (debug_wb_pc      ),
+    .debug_wb_rf_wen  (debug_wb_rf_wen  ),
+    .debug_wb_rf_wnum (debug_wb_rf_wnum ),
+    .debug_wb_rf_wdata(debug_wb_rf_wdata),  
+    .ws_dest_withvalid  (ws_dest_withvalid),
+    .int                (int),
+    
+        .s0_vpn2        (s0_vpn2),
+        .s0_odd_page    (s0_odd_page),
+                   // input  [               7:0] s0_asid,     
+        .s0_found       (s0_found),
+        .s0_index       (s0_index),
+        .s0_pfn         (s0_pfn),
+        .s0_c           (s0_c),
+        .s0_d           (s0_d),
+        .s0_v           (s0_v),
+        
+                .s1_vpn2        (s1_vpn2),
+                .s1_odd_page    (s1_odd_page),
+                           // input  [               7:0] s0_asid,     
+                .s1_found       (s1_found),
+                .s1_index       (s1_index),
+                .s1_pfn         (s1_pfn),
+                .s1_c           (s1_c),
+                .s1_d           (s1_d),
+                .s1_v           (s1_v),
+                .c0_entryhi     (c0_entryhi),
+                .ws_to_es_tlbp  (ws_to_es_tlbp)
+);
+
+endmodule
