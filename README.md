@@ -1,2 +1,5 @@
-# 19-20-Computer_architecture
- 19-20Autumn Computer_architecture experiment UCAS
+中国科学院大学 2019-2020秋季学期 体系结构实验课
+
+开发基于mips指令集的较完备的五级前递流水CPU，使用AXI总线进行内存与CPU的交互， 实现了TLB与Cache，支持常见的例外处理。
+
+代码与实验报告仅供参考，不可抄袭。若有引用请注明来源。
