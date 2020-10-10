@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="tb_top_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="tb_top" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="18815fs"></ZoomEndTime>
+      <Cursor1Time time="4000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="175"></NameColumnWidth>
+      <ValueColumnWidth column_width="126"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="22" />
+   <wvobject fp_name="/tb_top/a" type="array">
+      <obj_property name="ElementShortName">a[31:0]</obj_property>
+      <obj_property name="ObjectShortName">a[31:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/b" type="array">
+      <obj_property name="ElementShortName">b[31:0]</obj_property>
+      <obj_property name="ObjectShortName">b[31:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/result" type="array">
+      <obj_property name="ElementShortName">result[67:0]</obj_property>
+      <obj_property name="ObjectShortName">result[67:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i" type="array">
+      <obj_property name="ElementShortName">i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">i[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/j" type="array">
+      <obj_property name="ElementShortName">j[31:0]</obj_property>
+      <obj_property name="ObjectShortName">j[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/A" type="array">
+      <obj_property name="ElementShortName">A[31:0]</obj_property>
+      <obj_property name="ObjectShortName">A[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/B" type="array">
+      <obj_property name="ElementShortName">B[31:0]</obj_property>
+      <obj_property name="ObjectShortName">B[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/p" type="array">
+      <obj_property name="ElementShortName">p[16:0][67:0]</obj_property>
+      <obj_property name="ObjectShortName">p[16:0][67:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/c" type="array">
+      <obj_property name="ElementShortName">c[13:0]</obj_property>
+      <obj_property name="ObjectShortName">c[13:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/a" type="array">
+      <obj_property name="ElementShortName">a[33:0]</obj_property>
+      <obj_property name="ObjectShortName">a[33:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/b" type="array">
+      <obj_property name="ElementShortName">b[33:0]</obj_property>
+      <obj_property name="ObjectShortName">b[33:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/bnum" type="array">
+      <obj_property name="ElementShortName">bnum[34:0]</obj_property>
+      <obj_property name="ObjectShortName">bnum[34:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/result" type="array">
+      <obj_property name="ElementShortName">result[67:0]</obj_property>
+      <obj_property name="ObjectShortName">result[67:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/sum" type="array">
+      <obj_property name="ElementShortName">sum[67:0]</obj_property>
+      <obj_property name="ObjectShortName">sum[67:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/fin_c" type="array">
+      <obj_property name="ElementShortName">fin_c[67:0]</obj_property>
+      <obj_property name="ObjectShortName">fin_c[67:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/C" type="array">
+      <obj_property name="ElementShortName">C[67:0]</obj_property>
+      <obj_property name="ObjectShortName">C[67:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/c" type="array">
+      <obj_property name="ElementShortName">c[13:0]</obj_property>
+      <obj_property name="ObjectShortName">c[13:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/c_14" type="logic">
+      <obj_property name="ElementShortName">c_14</obj_property>
+      <obj_property name="ObjectShortName">c_14</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/c_15" type="logic">
+      <obj_property name="ElementShortName">c_15</obj_property>
+      <obj_property name="ObjectShortName">c_15</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/cout" type="array">
+      <obj_property name="ElementShortName">cout[67:0][13:0]</obj_property>
+      <obj_property name="ObjectShortName">cout[67:0][13:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/aha/p" type="array">
+      <obj_property name="ElementShortName">p[16:0][67:0]</obj_property>
+      <obj_property name="ObjectShortName">p[16:0][67:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/RESULT" type="array">
+      <obj_property name="ElementShortName">RESULT[63:0]</obj_property>
+      <obj_property name="ObjectShortName">RESULT[63:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+</wave_config>

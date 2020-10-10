@@ -1,0 +1,7 @@
+INFO: [VRFC 10-2263] Analyzing Verilog file "E:/Xilinx/Vivado/homework/wallce_calculator_34/wallce_calculator_32.srcs/sources_1/new/calculator.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module signed_multi
+INFO: [VRFC 10-311] analyzing module add
+INFO: [VRFC 10-311] analyzing module wallace
+INFO: [VRFC 10-2263] Analyzing Verilog file "E:/Xilinx/Vivado/homework/wallce_calculator_34/wallce_calculator_32.srcs/sim_1/new/tb.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_top
+WARNING: [VRFC 10-2581] 2147483648 as 32-bit signed integer overflows, using -2147483648 instead [E:/Xilinx/Vivado/homework/wallce_calculator_34/wallce_calculator_32.srcs/sim_1/new/tb.v:47]

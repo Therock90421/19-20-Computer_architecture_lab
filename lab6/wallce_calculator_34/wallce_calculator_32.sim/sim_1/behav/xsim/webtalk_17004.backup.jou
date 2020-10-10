@@ -1,0 +1,12 @@
+#-----------------------------------------------------------
+# Webtalk v2018.2 (64-bit)
+# SW Build 2258646 on Thu Jun 14 20:03:12 MDT 2018
+# IP Build 2256618 on Thu Jun 14 22:10:49 MDT 2018
+# Start of session at: Tue Oct  8 19:51:25 2019
+# Process ID: 17004
+# Current directory: E:/Xilinx/Vivado/homework/wallce_calculator_34/wallce_calculator_32.sim/sim_1/behav/xsim
+# Command line: wbtcv.exe -mode batch -source E:/Xilinx/Vivado/homework/wallce_calculator_34/wallce_calculator_32.sim/sim_1/behav/xsim/xsim.dir/tb_top_behav/webtalk/xsim_webtalk.tcl -notrace
+# Log file: E:/Xilinx/Vivado/homework/wallce_calculator_34/wallce_calculator_32.sim/sim_1/behav/xsim/webtalk.log
+# Journal file: E:/Xilinx/Vivado/homework/wallce_calculator_34/wallce_calculator_32.sim/sim_1/behav/xsim\webtalk.jou
+#-----------------------------------------------------------
+source E:/Xilinx/Vivado/homework/wallce_calculator_34/wallce_calculator_32.sim/sim_1/behav/xsim/xsim.dir/tb_top_behav/webtalk/xsim_webtalk.tcl -notrace
