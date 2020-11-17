@@ -57,7 +57,7 @@ wire resetn;
 assign resetn=aresetn;
 reg         reset;
 always @(posedge clk) reset <= ~aresetn;
-
+wire last_load;
 // inst sram interface
 wire        inst_sram_en;
 wire [ 3:0] inst_sram_wen;
@@ -81,7 +81,7 @@ wire inst_data_ok;
 
 wire data_req;
 wire data_wr;
-wire [2:0] data_size;
+wire [3:0] data_size;
 wire data_addr_ok;
 wire data_data_ok;
 
@@ -251,7 +251,8 @@ exe_stage exe_stage(
     .data_req(data_req),
     .data_wr(data_wr),
     .data_size(data_size),
-    .data_addr_ok(data_addr_ok)
+    .data_addr_ok(data_addr_ok),
+    .data_data_ok   (data_data_ok)
 );
 
 // MEM stage

@@ -22,17 +22,16 @@ module exe_stage(
     output  [38   :0]                es_dest_withvalid,
     input                           ws_to_es_bus,
     input                           ms_to_es_bus,
- 
     output data_req,
     output data_wr,
     output [2:0] data_size,
-    input data_addr_ok
-
+    input data_addr_ok,
+    input data_data_ok
 );
     
 
 
-
+reg data_addr_arrived;
 reg         es_valid      ;
 wire        es_ready_go   ;
 
@@ -95,8 +94,23 @@ wire inst_eret;
 wire es_bd;
 wire [ 4:0] es_excode;
 wire [31:0] fs_badvaddr;
+
+wire load_store;
 /////////////////////
+
+////////////////////////
+reg EX;
+always@(posedge clk)begin
+    if(reset)
+        EX<=1'b0;
+    else if(ws_to_es_bus | ms_to_es_bus)
+        EX<=1'b1;
+    else if(ds_to_es_valid && es_allowin)
+        EX<=1'b0;
+        end
+//////////////////////////////
 assign {
+        
         fs_badvaddr,      //206:175
         inst_sw,          //174
         inst_lw,          //173
@@ -138,7 +152,7 @@ assign {
         es_rs_value    ,  //95 :64
         es_rt_value    ,  //63 :32
         es_pc             //31 :0
-       } = (!ws_to_es_bus & !ms_to_es_bus ) ? ds_to_es_bus_r : 0;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ğ¼ï¿½ï¿½ï¿½Ö»Òªï¿½Ã´ï¿½ï¿½Ğ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½eretï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+       } = (~EX & !ws_to_es_bus & !ms_to_es_bus) ? ds_to_es_bus_r : 0;//(!ws_to_es_bus & !ms_to_es_bus ) ? ds_to_es_bus_r : 0;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ğ¼ï¿½ï¿½ï¿½Ö»Òªï¿½Ã´ï¿½ï¿½Ğ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½eretï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 wire [31:0] es_alu_src1   ;
 wire [31:0] es_alu_src2   ;
@@ -151,21 +165,54 @@ wire   [31:0]  ES_result;
     wire    block_valid,block;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å£¨Ä¿ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ÒªĞ´ï¿½Ø£ï¿½
     assign block= (es_dest == 5'd0)?0:es_gr_we;
     assign block_valid = block&es_valid;
-    //assign es_dest_withvalid = {block_valid,es_dest};
-    assign es_dest_withvalid = {(es_load_op | inst_mfc0)&es_valid,ES_result ,block_valid,es_dest};  //10.3Ç°ï¿½ï¿½
+   
+    //assign es_dest_withvalid = {es_load_op&es_valid | inst_mfc0&es_valid,ES_result ,block_valid,es_dest};  //10.3Ç°ï¿½ï¿½
+    assign es_dest_withvalid = {es_load_op&es_valid&&~es_ex | inst_mfc0&es_valid&&~es_ex,ES_result ,block_valid,es_dest};  
 ///////////////////////////////////////////////////////////////////////
 
-wire load_store;
+
 
 
 assign es_res_from_mem = es_load_op;
 
+always @(posedge clk) begin
+    if(reset)
+        data_addr_arrived<=0;
+    else if(es_to_ms_valid&&ms_allowin)
+        data_addr_arrived<=0;
+    else if(data_addr_ok)
+        data_addr_arrived<=1;       
+end
 
+assign data_wr=~es_res_from_mem;
+assign load_store=inst_sb|inst_sh|inst_swl|inst_swr|inst_sw|inst_lb|inst_lbu|inst_lh|inst_lhu
+                |inst_lw|inst_lwl|inst_lwr;
+//assign data_req=load_store&&ms_allowin&&es_valid&&~es_ex; 
 
-assign es_ready_go    = (div_or_mul[3])?m_axis_dout_tvalid:
-                         (div_or_mul[2])?um_axis_dout_tvalid:
-                        (load_store&&!(data_req&data_addr_ok))?1'b0:
-                         1'b1;///bug! assign es_ready_go    = (div_or_mul[3])?m_axis_dout_tvalid:1'b1;
+//assign data_req=load_store&&ms_allowin&&es_valid
+assign data_req=load_store&&ms_allowin&&es_valid&&~es_ex&&~EX;//±ØĞëEXE²»ÊÇÀıÍâ£¬MEMÒ²²»ÊÇÀıÍâ²ÅÄÜ·¢ÇëÇó
+/*assign data_size=(inst_sb|inst_lb|inst_lbu)?3'b000:         //bug!
+                (inst_sh|inst_lh|inst_lhu)?3'b001:
+                (inst_lw|inst_sw)?          3'b010:
+                (inst_swl)?                 3'b100:
+                                            3'b101;*/
+assign data_size=(inst_sb|inst_lb|inst_lbu)?3'b000:     
+                  (inst_sh|inst_lh|inst_lhu)?3'b001:
+                  (inst_lw|inst_sw)?          3'b010:
+                  (inst_swl|inst_lwl)?  (es_alu_result[1:0] == 2'b00)?  3'b100:
+                                        (es_alu_result[1:0] == 2'b01)?  3'b101:       
+                                        3'b110:
+                  (inst_swr|inst_lwr)?  (es_alu_result[1:0] == 2'b11)?  3'b100:
+                                        (es_alu_result[1:0] == 2'b10)?  3'b101:       
+                                        3'b110:
+								3'b000;
+///////////////////////////////////////////////////////////////////////////////
+reg done_div;								
+assign es_ready_go    = (div_or_mul[3])?m_axis_dout_tvalid || done_div:
+                         (div_or_mul[2])?um_axis_dout_tvalid || done_div:
+                        (load_store && !data_addr_ok&&!data_addr_arrived && ~es_ex &&~EX)?1'b0:
+                         1'b1;
+						 ///bug! assign es_ready_go    = (div_or_mul[3])?m_axis_dout_tvalid:1'b1;
 
 assign es_allowin     = !es_valid || es_ready_go && ms_allowin;
 assign es_to_ms_valid =  es_valid && es_ready_go;
@@ -225,6 +272,7 @@ always @(posedge clk) begin
         us_axis_divisor_tvalid <= 1'b0;
         us_axis_dividend_tvalid <= 1'b0;
         last <= 1'b0;
+        done_div <= 1'b0;
     end
     else if(s_axis_divisor_tready & s_axis_dividend_tready )begin //s_axis_divisor_tready & s_axis_dividend_tready
         s_axis_divisor_tvalid <= 1'b0;
@@ -234,20 +282,29 @@ always @(posedge clk) begin
         us_axis_divisor_tvalid <= 1'b0;
         us_axis_dividend_tvalid <= 1'b0;
     end    
-    else if (div_or_mul[3] & ~last) begin
+    //else if (div_or_mul[3] & ~last ) begin
+    else if (div_or_mul[3] & ~last & ~done_div) begin
         s_axis_divisor_tvalid <= 1'b1;
         s_axis_dividend_tvalid <= 1'b1;
         last <= 1'b1;
     end
-    else if (div_or_mul[2] & ~last) begin
+    //else if (div_or_mul[2] & ~last) begin
+    else if (div_or_mul[2] & ~last & ~done_div) begin
         us_axis_divisor_tvalid <= 1'b1;
         us_axis_dividend_tvalid <= 1'b1;
         last <= 1'b1;
     end
-    if(m_axis_dout_tvalid)
+    if(m_axis_dout_tvalid) begin
     last <= 1'b0;
-    else if(um_axis_dout_tvalid)
+    done_div <= 1'b1;
+    end
+    else if(um_axis_dout_tvalid) begin
     last <= 1'b0;
+    done_div <= 1'b1;
+    end
+    if (ds_to_es_valid && es_allowin) begin
+            done_div <= 1'b0;
+        end
    
 end
 
@@ -339,7 +396,8 @@ assign    ES_result = (inst_mflo)?LO:
                        
                        
                        
-assign es_ex = (ex || overflow || load_address_error || store_address_error) & es_valid;
+//assign es_ex = (ex || overflow || load_address_error || store_address_error) & es_valid;
+assign es_ex = (ex || overflow || load_address_error || store_address_error);
 wire [4:0]ES_excode;
 assign ES_excode = (ex & (es_excode == 5'h00))? 5'h00
                   : (overflow)? 5'h0c
@@ -348,6 +406,7 @@ assign ES_excode = (ex & (es_excode == 5'h00))? 5'h00
                   : es_excode;
 //////////////////////////////////////////////    
 assign es_to_ms_bus = {
+                       load_store,       //158
                        badvaddr,         //157:126
                        es_ex,            //125
                        inst_eret,        //124
@@ -371,29 +430,7 @@ assign es_to_ms_bus = {
                        es_pc             //31:0
                       } ;
   
-   /*.data_req(data_req),
-    .data_wr(data_wr),
-    .data_size(data_size),
-    .data_addr_ok(data_addr_ok)*/
-reg data_addr_arrived;
-always @(posedge clk) begin
-    if(reset)
-        data_addr_arrived<=0;
-    else if(es_to_ms_valid)
-        data_addr_arrived<=0;
-    else if(data_addr_ok)
-        data_addr_arrived<=1;       
-end
 
-assign data_wr=~es_res_from_mem;
-assign load_store=inst_sb|inst_sh|inst_swl|inst_swr|inst_sw|inst_lb|inst_lbu|inst_lh|inst_lhu
-                |inst_lw|inst_lwl|inst_lwr;
-assign data_req=load_store&&~data_addr_arrived;
-assign data_size=(inst_sb|inst_lb|inst_lbu)?3'b000:
-                (inst_sh|inst_lh|inst_lhu)?3'b001:
-                (inst_lw|inst_sw)?          3'b010:
-                (inst_swl)?                 3'b100:
-                                            3'b101;
 
 //////////////////////////////////////////////////////////////////
 assign data_sram_en    = 1'b1;

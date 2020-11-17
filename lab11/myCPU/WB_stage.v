@@ -133,7 +133,8 @@ assign ws_to_fs_bus = {
 };
 
 assign ws_to_ds_bus = {
-                       (interrupt & ws_valid),
+                       //(interrupt & ws_valid),
+                       (interrupt ),
                        (wb_ex | eret )
                        };
 assign ws_to_es_bus = wb_ex | eret ;

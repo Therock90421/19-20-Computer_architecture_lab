@@ -20,7 +20,7 @@ module id_stage(
     
     
     input  [38   :0]                es_dest_withvalid,
-        //es_dest_withvalid  ��5λ��ʾ��û�б�Ҫ��ϣ�����λ��ʾ�Ĵ�����,6��37λ��ʾ�������ݣ���38λ��ʾ��������������alu�����ڴ�
+        //es_dest_withvalid  ��5λ��ʾ��û�б�Ҫ��ϣ�����λ��ʾ�Ĵ�����?,6��37λ��ʾ�������ݣ���38λ��ʾ��������������alu�����ڴ�
     input  [38   :0]                ms_dest_withvalid,
         
     input  [37   :0]                ws_dest_withvalid,
@@ -43,12 +43,25 @@ wire [31:0] ds_pc  ;
 wire ds_bd;
 wire fs_ex;
 wire [31:0] fs_badvaddr;
+///////////////////
+
+reg WB_EX;
+always@(posedge clk)begin
+    if(reset)
+        WB_EX<=1'b0;
+    else if(ws_to_ds_bus[0])
+        WB_EX<=1'b1;
+    else if(fs_to_ds_valid && ds_allowin)
+        WB_EX<=1'b0;
+        end
+        
+/////////////////////////////      
 assign {
         fs_ex,   //97
         fs_badvaddr,//96:65
         ds_bd,   //64
         ds_inst ,//63:32,
-        ds_pc  } = (!ws_to_ds_bus[0]) ? fs_to_ds_bus_r : 0;  //!ȡ�������
+        ds_pc  } = (~WB_EX & !ws_to_ds_bus[0]) ? fs_to_ds_bus_r : 0;//(!ws_to_ds_bus[0]) ? fs_to_ds_bus_r : 0;  //!ȡ�������?
 
 wire        rf_we   ;
 wire [ 4:0] rf_waddr;
@@ -155,7 +168,7 @@ wire        inst_swl;
 wire        inst_swr;
 ////////////////////////////////////////////////
 wire        inst_mfc0;  //��Э�Ĵ���ȡ����
-wire        inst_mtc0;  //��Э�Ĵ������ȥ
+wire        inst_mtc0;  //��Э�Ĵ�������?
 wire        syscall;
 wire        inst_eret;
 wire        break;
@@ -190,15 +203,16 @@ assign fs_bd        = (inst_beq|| inst_bne  || inst_jal
                    || inst_jr|| inst_bgez|| inst_bgtz
                    || inst_blez|| inst_bltz|| inst_j
                    || inst_bltzal|| inst_bgezal|| inst_jalr) & ds_valid;
-assign br_bus       = {fs_bd,br_taken,br_target};
+
 
 //////////////////////////////////////
-wire        inst_overflow;//////�����������ָ��
+wire        inst_overflow;//////�����������ָ��?
 assign      inst_overflow = (inst_add || inst_addi || inst_sub) & ds_valid;
 
 
 wire ds_ex;
-assign ds_ex = (syscall || break || fs_ex || no_inst || ws_to_ds_bus[1])? 1'b1 : 1'b0;    //[1]Ϊ�жϱ��
+assign ds_ex = (syscall || break || fs_ex || no_inst || ws_to_ds_bus[1])? 1'b1 : 1'b0;    //[1]Ϊ�жϱ��?
+
 
 wire [4:0] ds_excode;
 assign ds_excode = (ws_to_ds_bus[1])? 5'h00
@@ -410,7 +424,7 @@ assign rf_raddr2 = rt;
 
    
     wire             rs_es, rs_ms, rs_ws, rt_es, rt_ms, rt_ws;
-    assign          rs_es = (es_dest_withvalid[5] == 0)?1                        //û��д�ز�������Ŀ��Ĵ���Ϊ0��������д�ز�������Ŀ��Ĵ�������IDԴ�Ĵ���ʱΪ1
+    assign          rs_es = (es_dest_withvalid[5] == 0)?1                        //û��д�ز�������Ŀ��Ĵ����?0��������д�ز�������Ŀ��Ĵ�������IDԴ�Ĵ���ʱΪ1
                              :(rs == es_dest_withvalid[4:0])?0
                              :1;
     assign          rs_ms = (ms_dest_withvalid[5] == 0)?1                        
@@ -419,7 +433,7 @@ assign rf_raddr2 = rt;
     assign          rs_ws = (ws_dest_withvalid[5] == 0)?1                        
                              :(rs == ws_dest_withvalid[4:0])?0
                              :1;
-    assign          rt_es = (es_dest_withvalid[5] == 0)?1                        //û��д�ز�������Ŀ��Ĵ���Ϊ0��������д�ز�������Ŀ��Ĵ�������IDԴ�Ĵ���ʱΪ1
+    assign          rt_es = (es_dest_withvalid[5] == 0)?1                        //û��д�ز�������Ŀ��Ĵ����?0��������д�ز�������Ŀ��Ĵ�������IDԴ�Ĵ���ʱΪ1
                              :(rt == es_dest_withvalid[4:0])?0
                              :1;
     assign          rt_ms = (ms_dest_withvalid[5] == 0)?1                        
@@ -429,7 +443,7 @@ assign rf_raddr2 = rt;
                              :(rt == ws_dest_withvalid[4:0])?0
                              :1;
 
-    assign          do_not_block = es_dest_withvalid[38]?0://���exe�׶ε���loadָ���ô������һ�ģ�����Ͳ�����
+    assign          do_not_block = es_dest_withvalid[38]?0://���exe�׶ε���loadָ���ô������һ�ģ�����Ͳ�����?
                                     ms_dest_withvalid[38]?0:
                                     1;              
    
@@ -445,8 +459,8 @@ regfile u_regfile(
     .waddr  (rf_waddr ),
     .wdata  (rf_wdata )
     );
-
-
+//wire   j_reg = rs_es & rs_ms & rs_ws;//1Ϊ��ǰ��
+wire   j_reg = rs_es & rs_ms & rs_ws & rt_es & rt_ms & rt_ws;//1Ϊ��ǰ��
 
 assign  rs_value = (~rs_es)?es_dest_withvalid[37:6]
                    :(~rs_ms)?ms_dest_withvalid[37:6]
@@ -463,6 +477,15 @@ assign rs_ge_zero = (!rs_value[31]);
 assign rs_gt_zero = (!rs_value[31] && !(rs_value == 0));
 
 assign rs_eq_rt = (rs_value == rt_value);
+reg valid;
+always@(posedge clk) begin
+    if(reset)
+        valid <= 0;
+    else if(ds_to_es_valid)
+        valid <= 1;
+    else if(fs_to_ds_valid && ds_allowin)
+        valid <= 0;
+    end
 assign br_taken = (   inst_beq  &&  rs_eq_rt
                    || inst_bne  && !rs_eq_rt
                    || inst_jal
@@ -475,11 +498,11 @@ assign br_taken = (   inst_beq  &&  rs_eq_rt
                    || inst_bltzal && !rs_ge_zero
                    || inst_bgezal && rs_ge_zero
                    || inst_jalr
-                  ) && ds_valid;
+                  )&&(ds_to_es_valid );//&& ds_to_es_valid;//bug &ds_valid
                   
 assign br_target = (inst_beq || inst_bne || inst_bgez || inst_bgtz
-                     || inst_blez || inst_bltz || inst_bltzal || inst_bgezal) ? (fs_pc + {{14{imm[15]}}, imm[15:0], 2'b0}) :
+                     || inst_blez || inst_bltz || inst_bltzal || inst_bgezal) ? (ds_pc+32'd4 + {{14{imm[15]}}, imm[15:0], 2'b0}) :
                    (inst_jr || inst_jalr)              ? rs_value :
                   /*inst_jal || inst_j*/              {fs_pc[31:28], jidx[25:0], 2'b0};
-
+assign br_bus       = {j_reg,fs_bd,br_taken,br_target};
 endmodule

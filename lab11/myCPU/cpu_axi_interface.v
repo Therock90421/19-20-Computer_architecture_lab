@@ -130,10 +130,10 @@ begin
     case(r_curstate)
         ReadStart:
         begin
-            if(inst_req && ~inst_wr)
-                r_nxtstate = Readinst;
-            else if(data_req && ~data_wr)
+            if(data_req && ~data_wr)
                 r_nxtstate = Read_data_check;
+            else  if(inst_req && ~inst_wr)
+                r_nxtstate = Readinst;
             else
                 r_nxtstate = r_curstate;
         end 
@@ -266,7 +266,8 @@ begin
         awsize <= !inst_size ? 3'd1 : {inst_size, 1'b0};
     end else if(w_curstate == WriteStart && w_nxtstate == Writedata) begin
         awaddr <= {data_addr[31:2], 2'd0};
-        awsize <= !data_size[1:0] ? 3'd1 : {data_size[1:0], 1'b0};
+       // awsize <= !data_size[1:0] ? 3'd1 : {data_size[1:0], 1'b0};
+        awsize <= !data_size[2:0] ? 3'd1 : {data_size[1:0], 1'b0};
     end
 end
 
@@ -284,48 +285,54 @@ always@(posedge clk)
 begin
     if(w_curstate == WriteStart && w_nxtstate == Writeinst) begin
         wdata <= inst_wdata;
-       
+       //wstrbÊÇ´íµÄ
         wstrb <= (~data_size[2])?
-                    (data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b00) ? 4'b0001
-                    :(data_addr[1:0] == 2'b01 && data_size[1:0] == 2'b00) ? 4'b0010
-                    :(data_addr[1:0] == 2'b10 && data_size[1:0] == 2'b00) ? 4'b0100
-                    :(data_addr[1:0] == 2'b11 && data_size[1:0] == 2'b00) ? 4'b1000
-                    :(data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b01) ? 4'b0011
-                    :(data_addr[1:0] == 2'b10 && data_size[1:0] == 2'b01) ? 4'b1100
-                    :(data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b10) ? 4'b1111
-                :   (data_size[0])?
-                        (data_addr[1:0]==2'b00)?4'b1111:
-                        (data_addr[1:0]==2'b01)?4'b1110:
-                        (data_addr[1:0]==2'b10)?4'b1100:
-                                                4'b1000
-                       :(data_addr[1:0]==2'b00)?4'b0001:
-                        (data_addr[1:0]==2'b01)?4'b0011:
-                        (data_addr[1:0]==2'b10)?4'b0111:
-                                                4'b1111:
-                   4'b1111;
+                            (data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b00) ? 4'b0001
+                            :(data_addr[1:0] == 2'b01 && data_size[1:0] == 2'b00) ? 4'b0010
+                            :(data_addr[1:0] == 2'b10 && data_size[1:0] == 2'b00) ? 4'b0100
+                            :(data_addr[1:0] == 2'b11 && data_size[1:0] == 2'b00) ? 4'b1000
+                            :(data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b01) ? 4'b0011
+                            :(data_addr[1:0] == 2'b10 && data_size[1:0] == 2'b01) ? 4'b1100
+                            :(data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b10) ? 4'b1111
+                        :   (data_size[0])?
+                                (data_addr[1:0]==2'b00)?4'b1111:
+                                (data_addr[1:0]==2'b01)?4'b1110:
+                                (data_addr[1:0]==2'b10)?4'b1100:
+                                                        4'b1000
+                               :(data_addr[1:0]==2'b00)?4'b0001:
+                                (data_addr[1:0]==2'b01)?4'b0011:
+                                (data_addr[1:0]==2'b10)?4'b0111:
+                                                        4'b1111
+                       :4'b1111;
+                        
+
                         
                     
     end else if(w_curstate == WriteStart && w_nxtstate == Writedata) begin
         wdata <= data_wdata;
        
-        wstrb <= (~data_size[2])?
-                    (data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b00) ? 4'b0001
-                    :(data_addr[1:0] == 2'b01 && data_size[1:0] == 2'b00) ? 4'b0010
-                    :(data_addr[1:0] == 2'b10 && data_size[1:0] == 2'b00) ? 4'b0100
-                    :(data_addr[1:0] == 2'b11 && data_size[1:0] == 2'b00) ? 4'b1000
-                    :(data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b01) ? 4'b0011
-                    :(data_addr[1:0] == 2'b10 && data_size[1:0] == 2'b01) ? 4'b1100
-                    :(data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b10) ? 4'b1111
-                :   (data_size[0])?
-                        (data_addr[1:0]==2'b00)?4'b1111:
-                        (data_addr[1:0]==2'b01)?4'b1110:
-                        (data_addr[1:0]==2'b10)?4'b1100:
-                                                4'b1000
-                       :(data_addr[1:0]==2'b00)?4'b0001:
-                        (data_addr[1:0]==2'b01)?4'b0011:
-                        (data_addr[1:0]==2'b10)?4'b0111:
-                                                4'b1111
-               :4'b1111;
+        
+               
+       wstrb <= (~data_size[2])?
+                                   (data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b00) ? 4'b0001
+                                   :(data_addr[1:0] == 2'b01 && data_size[1:0] == 2'b00) ? 4'b0010
+                                   :(data_addr[1:0] == 2'b10 && data_size[1:0] == 2'b00) ? 4'b0100
+                                   :(data_addr[1:0] == 2'b11 && data_size[1:0] == 2'b00) ? 4'b1000
+                                   :(data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b01) ? 4'b0011
+                                   :(data_addr[1:0] == 2'b10 && data_size[1:0] == 2'b01) ? 4'b1100
+                                   :(data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b10) ? 4'b1111
+                                   :4'b1111
+                                :(data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b00)?4'b0001                    //swl
+                                :(data_addr[1:0] == 2'b11 && data_size[1:0] == 2'b00)?4'b1000                    //swr
+                                :(data_addr[1:0] == 2'b01 && data_size[1:0] == 2'b01)?4'b0011                    //swl
+                                :(data_addr[1:0] == 2'b10 && data_size[1:0] == 2'b01)?4'b1100                    //swr       
+                                :(data_addr[1:0] == 2'b10 && data_size[1:0] == 2'b10)?4'b0111                    //swl
+                                :(data_addr[1:0] == 2'b01 && data_size[1:0] == 2'b10)?4'b1110                    //swr 
+                                :(data_addr[1:0] == 2'b11 && data_size[1:0] == 2'b11)?4'b1111                    //swl
+                                :(data_addr[1:0] == 2'b00 && data_size[1:0] == 2'b11)?4'b1111                    //swr 
+                                
+                                :4'b1111;        
+               
     end
 end
 

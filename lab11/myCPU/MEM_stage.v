@@ -19,7 +19,6 @@ module mem_stage(
     output  [38   :0]                ms_dest_withvalid,
     input                           ws_to_ms_bus,
     output                          ms_to_es_bus,
-
     input data_data_ok
 );
 
@@ -46,8 +45,15 @@ wire inst_eret;
 wire ms_bd;
 wire [ 4:0] ms_excode;
 wire [31:0] ms_badvaddr;
+
+wire load_store;
 ///////////////////////////////////
+
+////////////////////////////////
+
+//////////////////////////////
 assign {
+       load_store,       //158
        ms_badvaddr,      //157:126
        ex,               //125
        inst_eret,        //124
@@ -65,19 +71,19 @@ assign {
        inst_lh,          //72
        inst_lhu,         //71
         ms_res_from_mem,  //70:70
-        ms_gr_we       ,  //69:69                         //ï¿½ï¿½ï¿½ï¿½ÅºÅ¸ï¿½Ê²Ã´ï¿½Ã£ï¿½
+        ms_gr_we       ,  //69:69                     
         ms_dest        ,  //68:64          //mfc0Ê±Îªrd
         ms_alu_result  ,  //63:32
         ms_pc             //31:0
-       } = (!ws_to_ms_bus ) ? es_to_ms_bus_r : 0;
+       } = (~WB_EX & ~ws_to_ms_bus ) ? es_to_ms_bus_r : 0;
 
 wire [31:0] mem_result;
 wire [31:0] ms_final_result;
 ////////////////////////////////////////////////////////////////////////
-    wire    block_valid,block;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å£¨Ä¿ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ÒªÐ´ï¿½Ø£ï¿½
+    wire    block_valid,block;
     assign block = (ms_dest == 5'd0)?0:ms_gr_we;
     assign block_valid = block&ms_to_ws_valid;
-    assign ms_dest_withvalid = {inst_mfc0&ms_to_ws_valid,ms_final_result,block_valid,ms_dest};
+    assign ms_dest_withvalid = {inst_mfc0&ms_valid|ms_res_from_mem&~ms_ready_go&ms_valid,ms_final_result,block_valid,ms_dest};
    // assign ms_dest_withvalid = {block_valid,ms_dest};
 ///////////////////////////////////////////////////////////////////////
 
@@ -101,9 +107,31 @@ assign ms_to_ws_bus = {
                        ms_final_result,  //63:32
                        ms_pc             //31:0
                       };
+///////////////////////////////////////////////
+reg data_data_arrived;
+always @(posedge clk)begin
+    if(reset)
+        data_data_arrived<=0;
+    else if(data_data_arrived)
+        data_data_arrived<=0;
+    else if(data_data_ok)
+        data_data_arrived<=1;
+end
 
-assign ms_ready_go    = !ms_res_from_mem||data_data_ok;
-assign ms_allowin     = !ms_valid || ms_ready_go && ws_allowin;
+reg WB_EX;
+always@(posedge clk)begin
+    if(reset)
+        WB_EX<=1'b0;
+    else if(ws_to_ms_bus)
+        WB_EX<=1'b1;
+    else if(es_to_ms_valid && ms_allowin)
+        WB_EX<=1'b0;
+end
+//assign ms_ready_go    = !ms_res_from_mem||data_data_arrived;
+//assign ms_ready_go    = !ms_res_from_mem||data_data_arrived||data_data_ok ||ex;//swÒ²ÐèÒª×èÈû
+//assign ms_ready_go    = !load_store||data_data_arrived||data_data_ok ||ex;//swÒ²ÐèÒª×èÈû
+assign ms_ready_go    = !load_store||data_data_arrived||ex ||  ws_to_ms_bus   ||  WB_EX;//swÒ²ÐèÒª×èÈû
+assign ms_allowin     = !ms_valid|| ms_ready_go && ws_allowin;
 assign ms_to_ws_valid = ms_valid && ms_ready_go;
 always @(posedge clk) begin
     if (reset) begin
@@ -114,7 +142,7 @@ always @(posedge clk) begin
     end
 
     if (es_to_ms_valid && ms_allowin) begin
-        es_to_ms_bus_r  <= es_to_ms_bus;            //ï¿½ï¿½ï¿½ï¿½7   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+        es_to_ms_bus_r  <= es_to_ms_bus;            
     end
 end
 
